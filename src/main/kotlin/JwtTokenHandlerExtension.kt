@@ -30,6 +30,9 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
 
         // Code for setting up your extension starts here...
 
+        // Tell Burp we have a session handling action for it to find
+        api.http().registerSessionHandlingAction(this)
+
         // Just a simple hello world to start with
         api.logging().logToOutput("Hello Extension Writer!")
 
@@ -63,7 +66,6 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
 
         // We will modify this request and append the Jwt to it
         var modifiedRequest = actionData.request();
-
 
         api.logging().logToOutput("Leaving performAction")
 
