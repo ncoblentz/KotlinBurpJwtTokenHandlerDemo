@@ -4,12 +4,15 @@ import burp.api.montoya.http.message.requests.HttpRequest
 import burp.api.montoya.http.sessions.ActionResult
 import burp.api.montoya.http.sessions.SessionHandlingAction
 import burp.api.montoya.http.sessions.SessionHandlingActionData
+import java.util.regex.Pattern
 
 // Montoya API Documentation: https://portswigger.github.io/burp-extensions-montoya-api/javadoc/burp/api/montoya/MontoyaApi.html
 // Montoya Extension Examples: https://github.com/PortSwigger/burp-extensions-montoya-api-examples
 
 class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
+    private var accessToken: String? = ""
     private lateinit var api: MontoyaApi
+    private val tokenPattern = "\"token\" *: *\"([^\"]+)\""
 
     override fun initialize(api: MontoyaApi?) {
 
@@ -26,7 +29,7 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
         api.logging().logToOutput("Started loading the extension...")
 
         // Name our extension when it is displayed inside of Burp Suite
-        api.extension().setName("Your Plugin Name Here")
+        api.extension().setName("Jwt Token Handler")
 
         // Code for setting up your extension starts here...
 
@@ -55,7 +58,7 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
     // 2. Burp -> Settings -> Session -> Add -> Add -> Check Session Is Valid -> Check Mark: After running the macro, invoke a Burp extension handler -> Choose this Extension
     //    - Only requests that are checked whether they are in session will pass through this function
     //    - If a macro (recorded set of requests and responses) are executed first, we will have access to those macros through actionData.macroRequestResponses()
-    //    - We often want to look at the very last response in the set of macros and extract the Jwt token from it
+    //    - We want to extract the Jwt token from one of the responses
     //    - Then we want to add it as a header and cookie as described above in #1
     override fun performAction(actionData: SessionHandlingActionData?): ActionResult {
         api.logging().logToOutput("Entered performAction")
@@ -66,6 +69,29 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
 
         // We will modify this request and append the Jwt to it
         var modifiedRequest = actionData.request();
+
+        // Obtain the Jwt from a Macro if Present
+        if(actionData.macroRequestResponses().isNotEmpty()) {
+            api.logging().logToOutput("Found macro one or more http request/response pairs")
+
+            // Iterate through each of the macro request/response pairs, looking for that token
+            for(httpRequestResponse in actionData.macroRequestResponses()) {
+                if(httpRequestResponse.hasResponse()) {
+
+                    // Use a regex (it's more flexible than parsing JSON), to identify and extract the token
+                    val searchPattern = Pattern.compile(tokenPattern, Pattern.CASE_INSENSITIVE)
+                    val matcher = searchPattern.matcher(httpRequestResponse.response().toString())
+                    while (matcher.find() && matcher.groupCount() > 0) {
+
+                        // Save that token to a class instance variable so we can use it in future invocations of this method with out parsing session macros
+                        accessToken = matcher.group(1)
+                        api.logging().logToOutput("Found Access Token: $accessToken")
+                    }
+                }
+            }
+
+        }
+
 
         api.logging().logToOutput("Leaving performAction")
 
