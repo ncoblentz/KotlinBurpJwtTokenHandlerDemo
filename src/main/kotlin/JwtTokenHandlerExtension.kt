@@ -42,13 +42,20 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
         // Code for setting up your extension starts here...
 
         // Configure our settings
+        // Access Token RegEx to extract from login macro response
         accessTokenPatternSetting = StringExtensionSetting(
+            // pass the montoya API to the setting
             api,
+            // Give the setting a name which will show up in the Swing UI Form
             "Access Token RegEx Pattern",
+            // Key for where to save this setting in Burp's persistence store
             "BKSATH.pattern",
+            // Default value within the Swign UI Form
             "\"access_token\" *: *\"([^\"]+)\"",
+            // Whether to save it for this specific "PROJECT" or as a global Burp "PREFERENCE"
             ExtensionSettingSaveLocation.PROJECT
         )
+        // Name of the header to append the access token to
         headerNameSetting = StringExtensionSetting(
             api,
             "Name of Header",
@@ -56,6 +63,7 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
             "Authorization",
             ExtensionSettingSaveLocation.PROJECT
         )
+        // Prefix before appending the access token to the header (Bearer for example)
         headerValuePrefixSetting = StringExtensionSetting(
             api,
             "Header Value Prefix (include your space)",
@@ -63,6 +71,7 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
             "Bearer ",
             ExtensionSettingSaveLocation.PROJECT
         )
+        // Should we apply the header value for this application?
         shouldUpdateHeaderSetting = BooleanExtensionSetting(
             api,
             "Update the header?",
@@ -70,6 +79,7 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
             false,
             ExtensionSettingSaveLocation.PROJECT
         )
+        // The name of the cookie we should replace
         cookieNameSetting = StringExtensionSetting(
             api,
             "Name of Header",
@@ -77,6 +87,7 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
             "token",
             ExtensionSettingSaveLocation.PROJECT
         )
+        // Should we replace the cookie?
         shouldUpdateCookieSetting = BooleanExtensionSetting(
             api,
             "Update the cookie?",
@@ -85,11 +96,18 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
             ExtensionSettingSaveLocation.PROJECT
         )
 
+        // Creating a list of all the settings we defined above
         val extensionSetting = listOf(headerNameSetting,headerValuePrefixSetting,accessTokenPatternSetting,shouldUpdateHeaderSetting,cookieNameSetting,shouldUpdateCookieSetting)
+
+        // Pass the list of settings to a generator that will automatically create a UI for edditing the settings
         val gen = GenericExtensionSettingsFormGenerator(extensionSetting, "Jwt Token Handler")
         val settingsFormBuilder: FormBuilder = gen.getSettingsFormBuilder()
         val settingsForm: Form = settingsFormBuilder.run()
+
+        // Tell Burp we want a right mouse click context menu for accessing the settings
         api.userInterface().registerContextMenuItemsProvider(ExtensionSettingsContextMenuProvider(api, settingsForm))
+
+        // When we unload this extension, include a callback that closes any Swing UI forms instead of just leaving them still open
         api.extension().registerUnloadingHandler(ExtensionSettingsUnloadHandler(settingsForm))
 
         // Tell Burp we have a session handling action for it to find
