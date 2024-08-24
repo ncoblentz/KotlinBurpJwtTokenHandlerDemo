@@ -98,15 +98,11 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
                 //accessToken (checked for not null) is now called "it")
                 if (it.isNotEmpty()) {
                     api.logging().logToOutput("accessToken is Not Empty, adding header and cookie")
-                    modifiedRequest = modifiedRequest.addOrUpdateHeader("Authorization","Bearer: $it")
+                    modifiedRequest = modifiedRequest.addOrUpdateHeader("Authorization","Bearer $it")
+
                 }
             }
-
-
-
         }
-
-
         api.logging().logToOutput("Leaving performAction")
 
         // Continue execution with the modified request
