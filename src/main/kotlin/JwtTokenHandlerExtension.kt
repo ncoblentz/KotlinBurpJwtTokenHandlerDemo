@@ -99,7 +99,7 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
                 if (it.isNotEmpty()) {
                     api.logging().logToOutput("accessToken is Not Empty, adding header and cookie")
                     modifiedRequest = modifiedRequest.addOrUpdateHeader("Authorization","Bearer $it")
-
+                    modifiedRequest = modifiedRequest.addOrUpdateCookie("token",it)
                 }
             }
         }
