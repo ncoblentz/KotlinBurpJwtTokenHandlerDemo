@@ -152,11 +152,12 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
             api.logging().logToOutput("Found macro one or more http request/response pairs")
 
             // Iterate through each of the macro request/response pairs, looking for that token
-            for(httpRequestResponse in actionData.macroRequestResponses()) {
-                if(httpRequestResponse.hasResponse()) {
+            for (httpRequestResponse in actionData.macroRequestResponses()) {
+                if (httpRequestResponse.hasResponse()) {
 
                     // Use a regex (it's more flexible than parsing JSON), to identify and extract the token
-                    val searchPattern = Pattern.compile(tokenPattern, Pattern.CASE_INSENSITIVE)
+                    val searchPattern =
+                        Pattern.compile(accessTokenPatternSetting.currentValue, Pattern.CASE_INSENSITIVE)
                     val matcher = searchPattern.matcher(httpRequestResponse.response().toString())
                     while (matcher.find() && matcher.groupCount() > 0) {
 
@@ -166,18 +167,26 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
                     }
                 }
             }
+        }
 
-            // Apply the token (if not empty) to the current HTTP request.
-            // This will occur in scenario 1 and 2 discussed above
-            accessToken?.let {
-                //accessToken (checked for not null) is now called "it")
-                if (it.isNotEmpty()) {
-                    api.logging().logToOutput("accessToken is Not Empty, adding header and cookie")
-                    modifiedRequest = modifiedRequest.addOrUpdateHeader("Authorization","Bearer $it")
-                    modifiedRequest = modifiedRequest.addOrUpdateCookie("token",it)
+        // Apply the token (if not empty) to the current HTTP request.
+        // This will occur in scenario 1 and 2 discussed above
+        api.logging().logToOutput("current access token: $accessToken")
+        accessToken?.let {
+            //accessToken (checked for not null) is now called "it")
+            if (it.isNotEmpty()) {
+                api.logging().logToOutput("accessToken is Not Empty, adding header and cookie")
+                if(shouldUpdateHeaderSetting.currentValue) {
+                    api.logging().logToOutput("should update header")
+                    modifiedRequest = modifiedRequest.addOrUpdateHeader(headerNameSetting.currentValue,"${headerValuePrefixSetting.currentValue}$it")
+                }
+                if(shouldUpdateCookieSetting.currentValue) {
+                    api.logging().logToOutput("should update cookie")
+                    modifiedRequest = modifiedRequest.addOrUpdateCookie(cookieNameSetting.currentValue,it)
                 }
             }
         }
+
         api.logging().logToOutput("Leaving performAction")
 
         // Continue execution with the modified request
