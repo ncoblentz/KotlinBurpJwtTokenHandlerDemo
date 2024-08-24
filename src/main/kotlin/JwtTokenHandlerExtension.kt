@@ -1,17 +1,23 @@
 import burp.api.montoya.BurpExtension
 import burp.api.montoya.MontoyaApi
-import burp.api.montoya.http.message.params.HttpParameter
-import burp.api.montoya.http.message.params.HttpParameterType
-import burp.api.montoya.http.message.requests.HttpRequest
 import burp.api.montoya.http.sessions.ActionResult
 import burp.api.montoya.http.sessions.SessionHandlingAction
 import burp.api.montoya.http.sessions.SessionHandlingActionData
+import com.nickcoblentz.montoya.settings.*
+import de.milchreis.uibooster.model.Form
+import de.milchreis.uibooster.model.FormBuilder
 import java.util.regex.Pattern
 
 // Montoya API Documentation: https://portswigger.github.io/burp-extensions-montoya-api/javadoc/burp/api/montoya/MontoyaApi.html
 // Montoya Extension Examples: https://github.com/PortSwigger/burp-extensions-montoya-api-examples
 
 class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
+    private lateinit var shouldUpdateCookieSetting: BooleanExtensionSetting
+    private lateinit var cookieNameSetting: StringExtensionSetting
+    private lateinit var shouldUpdateHeaderSetting: BooleanExtensionSetting
+    private lateinit var headerValuePrefixSetting: StringExtensionSetting
+    private lateinit var headerNameSetting: StringExtensionSetting
+    private lateinit var accessTokenPatternSetting: StringExtensionSetting
     private var accessToken: String? = ""
     private lateinit var api: MontoyaApi
     private val tokenPattern = "\"token\" *: *\"([^\"]+)\""
@@ -34,6 +40,57 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
         api.extension().setName("Jwt Token Handler")
 
         // Code for setting up your extension starts here...
+
+        // Configure our settings
+        accessTokenPatternSetting = StringExtensionSetting(
+            api,
+            "Access Token RegEx Pattern",
+            "BKSATH.pattern",
+            "\"access_token\" *: *\"([^\"]+)\"",
+            ExtensionSettingSaveLocation.PROJECT
+        )
+        headerNameSetting = StringExtensionSetting(
+            api,
+            "Name of Header",
+            "BKSATH.header",
+            "Authorization",
+            ExtensionSettingSaveLocation.PROJECT
+        )
+        headerValuePrefixSetting = StringExtensionSetting(
+            api,
+            "Header Value Prefix (include your space)",
+            "BKSATH.prefix",
+            "Bearer ",
+            ExtensionSettingSaveLocation.PROJECT
+        )
+        shouldUpdateHeaderSetting = BooleanExtensionSetting(
+            api,
+            "Update the header?",
+            "BKSATH.updateHeader",
+            false,
+            ExtensionSettingSaveLocation.PROJECT
+        )
+        cookieNameSetting = StringExtensionSetting(
+            api,
+            "Name of Header",
+            "BKSATH.cookie",
+            "token",
+            ExtensionSettingSaveLocation.PROJECT
+        )
+        shouldUpdateCookieSetting = BooleanExtensionSetting(
+            api,
+            "Update the cookie?",
+            "BKSATH.updateCookie",
+            false,
+            ExtensionSettingSaveLocation.PROJECT
+        )
+
+        val extensionSetting = listOf(headerNameSetting,headerValuePrefixSetting,accessTokenPatternSetting,shouldUpdateHeaderSetting,cookieNameSetting,shouldUpdateCookieSetting)
+        val gen = GenericExtensionSettingsFormGenerator(extensionSetting, "Jwt Token Handler")
+        val settingsFormBuilder: FormBuilder = gen.getSettingsFormBuilder()
+        val settingsForm: Form = settingsFormBuilder.run()
+        api.userInterface().registerContextMenuItemsProvider(ExtensionSettingsContextMenuProvider(api, settingsForm))
+        api.extension().registerUnloadingHandler(ExtensionSettingsUnloadHandler(settingsForm))
 
         // Tell Burp we have a session handling action for it to find
         api.http().registerSessionHandlingAction(this)
@@ -70,7 +127,7 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
         requireNotNull(actionData) {"actionData : SessionHandlingActionData is not allowed to be null"}
 
         // We will modify this request and append the Jwt to it
-        var modifiedRequest = actionData.request();
+        var modifiedRequest = actionData.request()
 
         // Obtain the Jwt from a Macro if Present
         if(actionData.macroRequestResponses().isNotEmpty()) {
@@ -85,7 +142,7 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
                     val matcher = searchPattern.matcher(httpRequestResponse.response().toString())
                     while (matcher.find() && matcher.groupCount() > 0) {
 
-                        // Save that token to a class instance variable so we can use it in future invocations of this method with out parsing session macros
+                        // Save that token to a class instance variable, so we can use it in future invocations of this method without parsing session macros
                         accessToken = matcher.group(1)
                         api.logging().logToOutput("Found Access Token: $accessToken")
                     }
