@@ -1,14 +1,14 @@
 # Kotlin Burp Jwt Session Token Handler Demo
 
 This project demonstrates how to:
-1. Create a session handling macro that extracts a JWT from a login macro response and uses it in future requests both as a cookie and authorization bearer header
-2. Allow the tester to configure the Jwt, cookie, and header and save it as persistent project-level setting 
+1. Create a session handling action that extracts a JWT from a login macro response and uses it in future requests both as a cookie and authorization bearer header
+2. Allow the tester to configure the Jwt search pattern, cookie name, and header name + prefix and save it as persistent project-level setting. This makes the extension reusable across multiple applications without having to hard code logic for specific cases.
 
-To automatically persist project level settings in Burp and offer a user interface for modifying those settings, this project uses https://github.com/ncoblentz/BurpMontoyaLibrary. It allows an extension writer to define the settings they want to persist, the level of persistence (project level or Burp preference level), and then automatically receive a UI for updating those settings without having to deal with Java's Swing Library.
+To automatically persist project level settings in Burp and offer a user interface for modifying those settings, this project uses https://github.com/ncoblentz/BurpMontoyaLibrary. It allows an extension writer to define the settings they want to persist, the level of persistence (project level or Burp preference level), and then automatically generate a UI for updating those settings without having to deal with Java's Swing Library.
 
 ## Setup
 
-This project was initially created using the template found at: https://github.com/ncoblentz/KotlinBurpExtensionBase. That template also describes how to:
+This project was initially created using the template found at: https://github.com/ncoblentz/KotlinBurpExtensionBase. That template's README.md describes how to:
 - Build this and other projects based on the template
 - Load the built jar file in Burp Suite
 - Debug Burp Suite extensions using IntelliJ
@@ -21,11 +21,12 @@ The following examples use traffic generated from visiting and interacting with 
  
 ### Defining and Using The Settings
 
-Start by defining the settings in the `init` function of your Burp Extension. 
+Start by creating properties on our class to hold settings specific to our extension, so they can be accessed throughout the class.
 
 ![properties.png](Documentation/properties.png)
 
-Assign them to class instance variables (or properties), so they can be accessed throughout the extension.
+Next, initialize each of those settings in the `init` function of the Burp Extension.
+
 ![definesetting.png](Documentation/definesetting.png)
 
 Pass a list of the settings to the `GenericExtensionSettingFormGenerator` and build the form. It will create a user interface automatically to allow management of the settings. Register a right click context menu to access that settings UI. 
@@ -41,11 +42,11 @@ Use the settings by accessing the `currentValue` property for that setting
 
 ### Extract the Jwt from the Login REST call
 
-When logging into Juice Shop, the application returns a `token` parameter containing the Jwt. This plugin defines a session handling action that will extract that token when used by Burp's "Is In Session" rule.
+When logging into Juice Shop, the application returns a `token` JSON value in the response body that contains the Jwt/bearer token. This plugin defines a session handling action that will extract that token when used by Burp's "Is In Session" rule.
 
 ![login.png](Documentation/login.png)
 
-First step is to tell Burp we intended to offer a session handling action.
+In the `init` function, tell Burp we intended to offer a session handling action.
 
 ![sessionhandling.png](Documentation/sessionhandling.png)
 
@@ -57,7 +58,7 @@ Within that function, extract the token as shown below.
 
 ![extracttoken.png](Documentation/extracttoken.png)
 
-Afterward, apply that token to the current request. In Juice Shop, some features look at the "Authorization: Bearer " header and others look at the "token" cookie.
+Afterward, apply that token to the current request. In Juice Shop, some features look at the `Authorization: Bearer ` header and others look at the `token` cookie.
 
 ![apply.png](Documentation/apply.png)
 
@@ -73,7 +74,7 @@ Configure the settings for Juice Shop
 
 ### Create a Login Macro
 
-Select an existing login request from proxy history as a login macro that will be used to automatically login and obtain a Jwt.
+Select an existing login request from proxy history as a login macro that will be used to automatically log in and obtain a Jwt.
 
 ![loginmacro.png](Documentation/loginmacro.png)
 
@@ -86,16 +87,16 @@ For the second entry, use these settings.
 
 ![secondrule.png](Documentation/secondrule.png)
 
-Set the scope to include all URLs and the repeater tool.
+Set the scope to include all URLs (or you could define a scope and choose "Use Suite Scope") and the repeater tool.
 
 ![scope.png](Documentation/scope.png)
 
 ### Try it Out
 
-First open session tracer, so you can track what's happening.
+Open session tracer, so you can track what's happening.
 
 ![sessiontracer.png](Documentation/sessiontracer.png)
 
-Find a REST request and sent it to repeater. modify the cookie and bearer token, so it will generate a 401. Then send the request and check whether the session handling rule worked by watching the session tracer.
+Find a REST request and send it to repeater. Modify the cookie and bearer token, so it will generate a 401. Then, send the request and check whether the session handling rule worked by watching the session tracer.
 
 ![requestwithsessiontracer.png](Documentation/requestwithsessiontracer.png)
