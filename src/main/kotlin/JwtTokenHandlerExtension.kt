@@ -82,7 +82,7 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
         // The name of the cookie we should replace
         cookieNameSetting = StringExtensionSetting(
             api,
-            "Name of Header",
+            "Name of Cookie",
             "BKSATH.cookie",
             "token",
             ExtensionSettingSaveLocation.PROJECT
