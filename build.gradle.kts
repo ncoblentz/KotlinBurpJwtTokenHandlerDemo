@@ -35,7 +35,7 @@ dependencies {
     implementation("net.portswigger.burp.extensions:montoya-api:2024.7")
 
     // Include https://github.com/ncoblentz/BurpMontoyaLibrary
-    implementation("com.github.ncoblentz:BurpMontoyaLibrary:0.1.21")
+    implementation("com.github.ncoblentz:BurpMontoyaLibrary:0.1.27")
     implementation("com.github.milchreis:uibooster:1.21.1")
 
 }

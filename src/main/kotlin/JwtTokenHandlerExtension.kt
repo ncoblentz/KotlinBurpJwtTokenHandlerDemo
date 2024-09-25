@@ -4,6 +4,8 @@ import burp.api.montoya.http.sessions.ActionResult
 import burp.api.montoya.http.sessions.SessionHandlingAction
 import burp.api.montoya.http.sessions.SessionHandlingActionData
 import com.nickcoblentz.montoya.settings.*
+import com.nickcoblentz.montoya.withAddedOrUpdatedCookie
+import com.nickcoblentz.montoya.withAddedOrUpdatedHeader
 import de.milchreis.uibooster.model.Form
 import de.milchreis.uibooster.model.FormBuilder
 import java.util.regex.Pattern
@@ -176,11 +178,11 @@ class JwtTokenHandlerExtension : BurpExtension, SessionHandlingAction {
                 api.logging().logToOutput("accessToken is Not Empty, adding header and cookie")
                 if(shouldUpdateHeaderSetting.currentValue) {
                     api.logging().logToOutput("should update header")
-                    modifiedRequest = modifiedRequest.addOrUpdateHeader(headerNameSetting.currentValue,"${headerValuePrefixSetting.currentValue}$it")
+                    modifiedRequest = modifiedRequest.withAddedOrUpdatedHeader(headerNameSetting.currentValue,"${headerValuePrefixSetting.currentValue}$it")
                 }
                 if(shouldUpdateCookieSetting.currentValue) {
                     api.logging().logToOutput("should update cookie")
-                    modifiedRequest = modifiedRequest.addOrUpdateCookie(cookieNameSetting.currentValue,it)
+                    modifiedRequest = modifiedRequest.withAddedOrUpdatedCookie(cookieNameSetting.currentValue,it)
                 }
             }
         }
